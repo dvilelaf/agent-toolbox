@@ -1,0 +1,13 @@
+name: meta_tool
+author: dvilela
+version: 0.1.0
+type: custom
+description: A tool that runs a prompt against Perplexity AI.
+license: Apache-2.0
+aea_version: '>=1.0.0, <2.0.0'
+fingerprint:
+  meta_tool.py: bafybeigzmmi2zytmwg2dlm6r4dnlfzbjmtn2huwmiwza3iojraik37tqey
+fingerprint_ignore_patterns: []
+entry_point: meta_tool.py
+callable: run
+dependencies: {}

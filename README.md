@@ -1,1 +1,1 @@
-# skills-hackathon
+# Eolas x Algo: Agent Skills Hackathon
