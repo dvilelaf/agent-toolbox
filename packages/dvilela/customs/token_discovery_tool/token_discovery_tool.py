@@ -204,15 +204,16 @@ async def get_tweets(token_name) -> Optional[List]:
             f"{token_name} -is:retweet", product="Top", count=100
         )
         return [tweet_to_json(t) for t in tweets]
-    except Exception:
+    except Exception as e:
+        print(f"Exception while getting the tweets: {e}")
         return None
 
 
-async def is_popular(token) -> Optional[bool]:
+async def is_popular(token_symbol) -> Optional[bool]:
     """
     Check if a token is popular based on the number of likes, retweets and quotes
     """
-    tweets = await get_tweets(token["symbol"])
+    tweets = await get_tweets(token_symbol)
 
     if tweets is None:
         return None
@@ -230,8 +231,10 @@ async def is_popular(token) -> Optional[bool]:
     )
 
 
-async def twikit_login(twitter_credentials):
+async def twikit_login(twitter_credentials: str):
     """Login into Twitter"""
+
+    twitter_credentials = json.loads(twitter_credentials)
 
     with tempfile.TemporaryDirectory() as temp_dir:
         cookies = twitter_credentials["cookies"]
@@ -245,6 +248,7 @@ async def twikit_login(twitter_credentials):
             password=twitter_credentials["password"],
             cookies_file=str(cookies_path),
         )
+        print("Logged into Twitter")
 
 
 def error_response(msg: str) -> Tuple[str, None, None, None]:
@@ -275,6 +279,9 @@ def discover_tokens_tool(
     if twitter_credentials is None or twitter_credentials == "...":
         twitter_credentials = os.getenv("TWITTER_CREDENTIALS", None)
 
+    block_range = int(block_range)
+    liquidity_threshold = int(liquidity_threshold)
+    deployment_threshold = int(deployment_threshold)
 
     # Get tokens
     web3 = Web3(Web3.HTTPProvider(rpc))
@@ -284,11 +291,13 @@ def discover_tokens_tool(
 
     # Check popularity on Twitter
     if new_tokens and twitter_credentials:
+        print("Checking popularity on Twitter")
         loop = asyncio.get_event_loop()
         loop.run_until_complete(twikit_login(twitter_credentials))
 
         for token in new_tokens:
-            token["is_popular"] = loop.run_until_complete(is_popular(token))
+            token["is_popular"] = loop.run_until_complete(is_popular(token["symbol"]))
+            print(f"Is {token['symbol']} popular? {token['is_popular']}")
 
     return new_tokens
 

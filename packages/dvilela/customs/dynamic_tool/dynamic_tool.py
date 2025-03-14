@@ -17,7 +17,7 @@ Create a Python function called 'dynamic_function' that implements the following
 
 The function receives the following arguments: {kwargs}
 
-Only respond with the Python code.
+Only respond with the Python code implementing the function without including the usual if __name__ == '__main__': clause.
 Do not include markdown syntax.
 """
 
@@ -53,22 +53,38 @@ def evaluate_code(code, **kwargs):
         print("--------------------------------------------")
 
 
+def is_gemini_api_key_valid(gemini_api_key: str):
+    """Validates whether an API key is valid"""
+    try:
+        genai.configure(api_key=gemini_api_key)
+        model = genai.GenerativeModel(DEFAULT_MODEL)
+        model.generate_content("Hello!")
+        return True
+
+    except Exception:
+        return False
+
+
 def dynamic_tool(
     user_prompt: str,
-    function_kwargs: dict,
-    gemini_api_key: str,
-    model_name: str = DEFAULT_MODEL,
+    gemini_api_key: Optional[str],
     temperature: float = DEFAULT_TEMPERATURE,
+    **kwargs,
 ):
     """
     A tool that dynamically creates and evaluates LLM-generated code.
 
     user_prompt: a description of a function to be dynamically implemented by the LLM
-    function_kwargs: the keyword argument the generated function is expected to take
     gemini_api_key: API key for Gemini
-    model_name: the LLM model's name
     temperature: the LLM model's temperature
+    kwargs: the keyword argument the generated function is expected to take
     """
+
+    # Model has to be temporarily fixed as the agent keeps trying to use it paid models
+    model_name = DEFAULT_MODEL
+
+    if gemini_api_key is None or not is_gemini_api_key_valid(gemini_api_key):
+        gemini_api_key = os.getenv("GEMINI_API_KEY", None)
 
     genai.configure(api_key=gemini_api_key)
 
@@ -77,9 +93,7 @@ def dynamic_tool(
 
     try:
         response = model.generate_content(
-            PROMPT.format(
-                user_prompt=user_prompt, kwargs=tuple(function_kwargs.keys())
-            ),
+            PROMPT.format(user_prompt=user_prompt, kwargs=tuple(kwargs.keys())),
             generation_config=genai.types.GenerationConfig(
                 **generation_config_kwargs,
             ),
@@ -89,28 +103,25 @@ def dynamic_tool(
         return None
 
     code = clean_code(response.text)
-    return evaluate_code(code, **function_kwargs)
+    return evaluate_code(code, **kwargs)
 
 
 def run(**kwargs) -> Tuple[Optional[str], Optional[Dict[str, Any]], Any, Any]:
     """Run the task"""
 
-    gemini_api_key = kwargs.get("api_keys", {}).get(
-        "gemini", os.environ.get("GEMINI_API_KEY")
-    )
+    api_keys = kwargs.pop("api_keys", {})
+
+    gemini_api_key = api_keys.get("gemini", os.environ.get("GEMINI_API_KEY"))
     if not gemini_api_key:
         return error_response("gemini_api_key was not provided")
 
-    model_name = kwargs.get("model", DEFAULT_MODEL)
-    temperature = kwargs.get("temperature", DEFAULT_TEMPERATURE)
-    user_prompt = kwargs.get("prompt", None)
+    model_name = kwargs.pop("model", DEFAULT_MODEL)
+    temperature = kwargs.pop("temperature", DEFAULT_TEMPERATURE)
+    user_prompt = kwargs.pop("prompt", None)
     if not user_prompt:
         return error_response("Prompt was not provided")
-    function_kwargs = kwargs.get("function_kwargs", {})
 
-    result = dynamic_tool(
-        user_prompt, function_kwargs, gemini_api_key, model_name, temperature
-    )
+    result = dynamic_tool(user_prompt, gemini_api_key, temperature, **kwargs)
 
     if result is None:
         return error_response("Code evaluation produced an exception")

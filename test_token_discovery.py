@@ -10,7 +10,7 @@ load_dotenv(override=True)
 new_tokens, _, _, _ = run(
     api_keys={
         "RPCS": {"base": os.getenv("RPC_BASE")},
-        "twitter": json.loads(os.getenv("TWITTER_CREDENTIALS")),
+        "twitter": os.getenv("TWITTER_CREDENTIALS"),
     },
     block_range=200,
     liquidity_threshold=100,

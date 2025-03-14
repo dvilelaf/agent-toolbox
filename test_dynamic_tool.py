@@ -11,14 +11,12 @@ response, _, _, _ = run(
         "gemini": os.getenv("GEMINI_API_KEY"),
     },
     prompt="A function that decides to invest in a ERC-20 token or not and returns the amount to be invested",
-    function_kwargs={
-        "address": "0xdummy_address",
-        "symbol": "TEST",
-        "decimals": 18,
-        "liquidity": 1000,
-        "is_popular": True,
-        "available_balance_usd": 100,
-    },
+    address="0xdummy_address",
+    symbol="TEST",
+    decimals=18,
+    liquidity=1000,
+    is_popular=True,
+    available_balance_usd=100,
 )
 
 print(response)
