@@ -1,0 +1,13 @@
+name: orchestrator_tool
+author: dvilela
+version: 0.1.0
+type: custom
+description: A tool that orchestrates other tools.
+license: Apache-2.0
+aea_version: '>=1.0.0, <2.0.0'
+fingerprint:
+  orchestrator_tool.py: bafybeiaysk44jgbpzna4fkdhrsfikrls7v36dap5ognzmmvqb4otqhwzye
+fingerprint_ignore_patterns: []
+entry_point: orchestrator_tool.py
+callable: run
+dependencies: {}

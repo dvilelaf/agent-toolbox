@@ -7,8 +7,12 @@ license: Apache-2.0
 aea_version: '>=1.0.0, <2.0.0'
 fingerprint:
   constants.py: bafybeigfqrgzq7ljqkgnbcflfy2yfqweyfjjynegikuo6fv3itghjsrn6u
-  token_discovery.py: bafybeiagh32gufkieqlp2ttcjseh7gkiizwv2kcywfbiotfdhjz27is47e
+  token_discovery.py: bafybeigwprgonzplu5cpd4mb5mnzwher3gude6m3shza3wpt76zikovhrm
 fingerprint_ignore_patterns: []
 entry_point: token_discovery.py
 callable: run
-dependencies: {}
+dependencies:
+  web3:
+    version: '>=7.9.0'
+  twikit:
+    version: '>=2.3.3'

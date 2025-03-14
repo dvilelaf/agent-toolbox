@@ -1,4 +1,4 @@
-"""Token discovery tool"""
+"""Contains the job definitions"""
 
 import asyncio
 import json
