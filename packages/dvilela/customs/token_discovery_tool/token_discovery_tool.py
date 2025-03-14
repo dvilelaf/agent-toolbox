@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import os
 import tempfile
 from datetime import datetime
 from pathlib import Path
@@ -11,15 +12,16 @@ import requests
 from twikit import Client
 from web3 import Web3
 
-from packages.dvilela.customs.token_discovery.constants import (
+from packages.dvilela.customs.token_discovery_tool.constants import (
     ERC20_ABI,
     UNISWAP_FACTORY_ABI,
     UNISWAP_POOL_ABI,
     UNISWAP_V2_FACTORY,
 )
 
-BLOCK_RANGE = 1000
-LIQUIDITY_THRESHOLD = 1000
+DEFAULT_BLOCK_RANGE = 1000
+DEFAULT_LIQUIDITY_THRESHOLD = 1000
+DEFAULT_DEPLOYMENT_THRESHOLD = 24
 
 BASE_TOKEN_ADDRESES_BASE = {
     "WETH": "0x4200000000000000000000000000000000000006",
@@ -53,14 +55,16 @@ def get_eth_price():
     return response.json()["ethereum"]["usd"]
 
 
-def find_token_age(web3, contract_address) -> Optional[int]:
+def find_token_age(
+    web3, contract_address, block_range=DEFAULT_BLOCK_RANGE
+) -> Optional[int]:
     """Find the time when a contract was created"""
 
     creation_block = None
 
     # Search in the latest 5k blocks
     end_block = web3.eth.block_number
-    start_block = end_block - BLOCK_RANGE
+    start_block = end_block - block_range
 
     while start_block <= end_block:
         mid = (start_block + end_block) // 2
@@ -124,14 +128,19 @@ def analyze_liquidity(
         return 0
 
 
-def find_new_tokens(web3) -> List[Dict[str, Any]]:
+def find_new_tokens(
+    web3,
+    block_range: int = DEFAULT_BLOCK_RANGE,
+    liquidity_threshold: float = DEFAULT_LIQUIDITY_THRESHOLD,
+    deployment_threshold: int = DEFAULT_DEPLOYMENT_THRESHOLD,
+) -> List[Dict[str, Any]]:
     """Analyze newly deployed pools and find new tokens"""
     factory = web3.eth.contract(address=UNISWAP_V2_FACTORY, abi=UNISWAP_FACTORY_ABI)
     latest_block = web3.eth.block_number
     pool_created_logs = factory.events.PairCreated.get_logs(
-        from_block=web3.eth.block_number - BLOCK_RANGE, to_block=latest_block
+        from_block=web3.eth.block_number - block_range, to_block=latest_block
     )
-    print(f"Found {len(pool_created_logs)} new pools in the last {BLOCK_RANGE} blocks")
+    print(f"Found {len(pool_created_logs)} new pools in the last {block_range} blocks")
 
     if not pool_created_logs:
         return None
@@ -156,20 +165,32 @@ def find_new_tokens(web3) -> List[Dict[str, Any]]:
         liquidity = analyze_liquidity(web3, pool_address, token_0_info, token_1_info)
 
         # Ignore tokens with low liquidity
-        if liquidity < LIQUIDITY_THRESHOLD:
+        if liquidity < liquidity_threshold:
             print(
                 f"Ignoring pool with low liquidity [{token_0_info['symbol']}/{token_1_info['symbol']}]: ${liquidity}"
             )
             continue
 
+        print(
+            f"Pool [{token_0_info['symbol']}/{token_1_info['symbol']}] has enough liquidity ({liquidity} >= {liquidity_threshold})"
+        )
+
         # Check if the token is paired with a base token and is less than 24 hours old
         if token_0_info["address"] in BASE_ADDRESSES:
-            if find_token_age(web3, token_1_info["address"]) < 24:
+            if find_token_age(web3, token_1_info["address"]) < deployment_threshold:
                 new_tokens.append(token_1_info | {"liquidity": liquidity})
+            else:
+                print(
+                    f"Token {token_1_info['symbol']} was deployed more than {deployment_threshold} hours ago. Ignoring."
+                )
 
         if token_1_info["address"] in BASE_ADDRESSES:
             if find_token_age(web3, token_0_info["address"]) < 24:
                 new_tokens.append(token_0_info | {"liquidity": liquidity})
+            else:
+                print(
+                    f"Token {token_0_info['symbol']} was deployed more than {deployment_threshold} hours ago. Ignoring."
+                )
 
     print(f"Found {len(new_tokens)} new tokens with enough liquidity")
     return new_tokens
@@ -213,15 +234,15 @@ async def twikit_login(twitter_credentials):
     """Login into Twitter"""
 
     with tempfile.TemporaryDirectory() as temp_dir:
-        cookies = json.loads(twitter_credentials["twitter_cookies"])
+        cookies = twitter_credentials["cookies"]
         cookies_path = Path(temp_dir) / "twikit_cookies.json"
         with open(cookies_path, "w", encoding="utf-8") as f:
             json.dump(cookies, f)
 
         await twikit_client.login(
-            auth_info_1=twitter_credentials["twitter_email"],
-            auth_info_2=twitter_credentials["twitter_user"],
-            password=twitter_credentials["twitter_password"],
+            auth_info_1=twitter_credentials["email"],
+            auth_info_2=twitter_credentials["user"],
+            password=twitter_credentials["password"],
             cookies_file=str(cookies_path),
         )
 
@@ -231,20 +252,27 @@ def error_response(msg: str) -> Tuple[str, None, None, None]:
     return msg, None, None, None
 
 
-def run(**kwargs) -> Tuple[Optional[str], Optional[Dict[str, Any]], Any, Any]:
-    """Run the task"""
+def discover_tokens_tool(
+    rpc: str,
+    twitter_credentials: dict,
+    block_range: int = DEFAULT_BLOCK_RANGE,
+    liquidity_threshold: float = DEFAULT_LIQUIDITY_THRESHOLD,
+    deployment_threshold: int = DEFAULT_DEPLOYMENT_THRESHOLD,
+):
+    """
+    Searches for newly deployed ERC-20 tokens.
 
-    # RPC
-    RPC = kwargs.get("api_keys", {}).get("RPCS", {}).get("base", None)
-    if not RPC:
-        return error_response("RPC was not provided")
-
-    # Twitter credentials
-    twitter_credentials = kwargs.get("api_keys", {}).get("twitter", None)
+    twitter_credentials: a dictionary containing twitter credentials
+    block_range: the number of blocks to parse for newly deployed pools
+    liquidity_threshold: the min liquidity (in dollars) of a pool to be considered liquid enough
+    deployment_threshold: the max age (in hours) of a token since its deployment for it to be considered
+    """
 
     # Get tokens
-    web3 = Web3(Web3.HTTPProvider(RPC))
-    new_tokens = find_new_tokens(web3)
+    web3 = Web3(Web3.HTTPProvider(rpc))
+    new_tokens = find_new_tokens(
+        web3, block_range, liquidity_threshold, deployment_threshold
+    )
 
     # Check popularity on Twitter
     if new_tokens and twitter_credentials:
@@ -253,5 +281,33 @@ def run(**kwargs) -> Tuple[Optional[str], Optional[Dict[str, Any]], Any, Any]:
 
         for token in new_tokens:
             token["is_popular"] = loop.run_until_complete(is_popular(token))
+
+    return new_tokens
+
+
+def run(**kwargs) -> Tuple[Optional[str], Optional[Dict[str, Any]], Any, Any]:
+    """Searches for newly deployed ERC-20 tokens"""
+
+    # RPC
+    rpc = (
+        kwargs.get("api_keys", {})
+        .get("RPCS", {})
+        .get("base", os.environ.get("RPC_BASE"))
+    )
+    if not rpc:
+        return error_response("RPC was not provided")
+
+    # Twitter credentials
+    twitter_credentials = kwargs.get("api_keys", {}).get("twitter", None)
+
+    block_range = kwargs.get("block_range", DEFAULT_BLOCK_RANGE)
+    liquidity_threshold = kwargs.get("liquidity_threshold", DEFAULT_LIQUIDITY_THRESHOLD)
+    deployment_threshold = kwargs.get(
+        "deployment_threshold", DEFAULT_DEPLOYMENT_THRESHOLD
+    )
+
+    new_tokens = discover_tokens_tool(
+        rpc, twitter_credentials, block_range, liquidity_threshold, deployment_threshold
+    )
 
     return new_tokens, None, None, None

@@ -1,11 +1,14 @@
 """Contains the job definitions"""
 
+import os
 import re
 from typing import Any, Dict, Optional, Tuple
 
 import google.generativeai as genai
 
+DEFAULT_MODEL = "gemini-2.0-flash"
 DEFAULT_TEMPERATURE = 1.5
+
 
 PROMPT = """
 Create a Python function called 'dynamic_function' that implements the following logic:
@@ -50,25 +53,27 @@ def evaluate_code(code, **kwargs):
         print("--------------------------------------------")
 
 
-def run(**kwargs) -> Tuple[Optional[str], Optional[Dict[str, Any]], Any, Any]:
-    """Run the task"""
+def dynamic_tool(
+    user_prompt: str,
+    function_kwargs: dict,
+    gemini_api_key: str,
+    model_name: str = DEFAULT_MODEL,
+    temperature: float = DEFAULT_TEMPERATURE,
+):
+    """
+    A tool that dynamically creates and evaluates LLM-generated code.
 
-    GEMINI_API_KEY = kwargs.get("api_keys", {}).get("gemini", None)
-    if not GEMINI_API_KEY:
-        return error_response("GEMINI_API_KEY was not provided")
+    user_prompt: a description of a function to be dynamically implemented by the LLM
+    function_kwargs: the keyword argument the generated function is expected to take
+    gemini_api_key: API key for Gemini
+    model_name: the LLM model's name
+    temperature: the LLM model's temperature
+    """
 
-    genai.configure(api_key=GEMINI_API_KEY)
+    genai.configure(api_key=gemini_api_key)
 
-    model_name = kwargs.get("model", "gemini-2.0-flash")
     model = genai.GenerativeModel(model_name)
-    generation_config_kwargs = {
-        "temperature": kwargs.get("temperature", DEFAULT_TEMPERATURE)
-    }
-    user_prompt = kwargs.get("prompt", None)
-    if not user_prompt:
-        return error_response("Prompt was not provided")
-
-    function_kwargs = kwargs.get("function_kwargs", {})
+    generation_config_kwargs = {"temperature": temperature}
 
     try:
         response = model.generate_content(
@@ -80,12 +85,34 @@ def run(**kwargs) -> Tuple[Optional[str], Optional[Dict[str, Any]], Any, Any]:
             ),
         )
     except Exception as e:
-        return error_response(f"Gemini request failed: {e}")
+        print(f"Gemini request failed: {e}")
+        return None
 
     code = clean_code(response.text)
-    result = evaluate_code(code, **function_kwargs)
+    return evaluate_code(code, **function_kwargs)
+
+
+def run(**kwargs) -> Tuple[Optional[str], Optional[Dict[str, Any]], Any, Any]:
+    """Run the task"""
+
+    gemini_api_key = kwargs.get("api_keys", {}).get(
+        "gemini", os.environ.get("GEMINI_API_KEY")
+    )
+    if not gemini_api_key:
+        return error_response("gemini_api_key was not provided")
+
+    model_name = kwargs.get("model", DEFAULT_MODEL)
+    temperature = kwargs.get("temperature", DEFAULT_TEMPERATURE)
+    user_prompt = kwargs.get("prompt", None)
+    if not user_prompt:
+        return error_response("Prompt was not provided")
+    function_kwargs = kwargs.get("function_kwargs", {})
+
+    result = dynamic_tool(
+        user_prompt, function_kwargs, gemini_api_key, model_name, temperature
+    )
 
     if result is None:
-        return error_response(f"Code evaluation produced an exception:\n{code}")
+        return error_response("Code evaluation produced an exception")
 
     return result, None, None, None

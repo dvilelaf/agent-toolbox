@@ -1,4 +1,4 @@
-name: token_discovery
+name: token_discovery_tool
 author: dvilela
 version: 0.1.0
 type: custom
@@ -6,10 +6,11 @@ description: A tool to discover new, trending tokens.
 license: Apache-2.0
 aea_version: '>=1.0.0, <2.0.0'
 fingerprint:
+  __init__.py: bafybeicsi3kd254a467x2se7tyed5io73r65gjc7l253q5wldhi7hhndbu
   constants.py: bafybeigfqrgzq7ljqkgnbcflfy2yfqweyfjjynegikuo6fv3itghjsrn6u
-  token_discovery.py: bafybeigwprgonzplu5cpd4mb5mnzwher3gude6m3shza3wpt76zikovhrm
+  token_discovery_tool.py: bafybeiduy4fekrg5gxhow7culvfko5gp6pnr2ezj745iqqoso2roejnedq
 fingerprint_ignore_patterns: []
-entry_point: token_discovery.py
+entry_point: token_discovery_tool.py
 callable: run
 dependencies:
   web3:
