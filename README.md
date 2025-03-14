@@ -1,22 +1,56 @@
 # Eolas x Algo: Agent Skills Hackathon
 
-A collection of agent tools.
+A collection of tools for your agent's toolbox.
 
-## Requirements
+<p align="center">
+  <img width="30%" src="img/logo.png">
+</p>
+
+
+# What is it
+
+This repository implements three different agent tools. All of them are compatible with [Olas Mechs](https://olas.network/services/ai-mechs).
+
+* **Token discovery tool**: a tool to discover newly deployed tokens, based on age, liquidity and popularity on Twitter.
+
+* **Dynamic tool**: a meta-tool that *writes itself*. Given a prompt with a function description and some arguments, the tool will **create** that function and then evaluate it passing the arguments to it.
+
+* **Orchestrator tool**: one tool to rule them all. This tool looks for other locally available tools, loads them into an agent and uses other tools as required to reach its goal.
+
+# Requirements
 * Python >= 3.10
 * [UV](https://github.com/astral-sh/uv)
 
+# Tools
+
 ## Token discovery tool
 
-A tool to discover newly created tokens.
+A tool for discovering newly created tokens. It scans recently deployed pools, verifies if their tokens have sufficient liquidity, and filters out older tokens. Additionally, it checks for token popularity on Twitter.
+
+Its goal is to identify emerging tokens that remain under the radar but are gaining traction on Twitter.
+
+### How to test
 
 ```bash
 uv run python test_token_discovery.py
 ```
 
-```bash
-uv run python test_token_discovery.py
+### How it works
 
+1. Pools deployed during the last *n* blocks are scanned (configurable)
+2. We only keep pools where one of the tokens is WETH or a stablecoin
+3. Pools with low liquidity are filtered out (configurable)
+4. Tokens in those pools that were deployed longer that *h* hours ago are filtered out (configurable)
+5. Twitter popularity is calculated and added to the token info
+
+### What it looks like
+
+When the test is run, the tool searches for tokens in the last 200 blocks, where:
+* The liquidity pool has at least $100 in liquidity
+* The token was deployed during the last week
+
+
+```bash
 Found 7 new pools in the last 200 blocks
 Pool [WETH/CAT] has enough liquidity (10581.579828148 >= 100)
 Pool [WETH/ewon] has enough liquidity (480.26120016 >= 100)
@@ -68,13 +102,35 @@ Is APEX popular? True
 
 ## Dynamic tool
 
+A self-generating meta-tool. Simply describe your function to the LLM, and it will be created and evaluated on the fly.
+
+### How to test
+
 ```bash
 uv run python test_dynamic_tool.py
 ```
+### How it works
+
+1. A prompt describing a function plus some arguments are prepared
+2. We use Gemini to dynamically write the requested function
+3. The function is evaluated passing the arguments to it
+
+### What it looks like
+
+When the test is run, the tool asks for *A function that decides whether to invest in a ERC-20 token or not and returns the amount to be invested* and evaluates the function with the following arguments:
+
+```python
+address="0xdummy_address"
+symbol="TEST"
+decimals=18
+liquidity=1000
+is_popular=True
+available_balance_usd=100
+```
+
+The investment strategy is implemented by the LLM and evaluated with those arguments, returning the amount that should be invested in that token:
 
 ```bash
-uv run python test_dynamic_tool.py
-
 --------------------------------------------
 Evaluating the following function:
 def dynamic_function(address, symbol, decimals, liquidity, is_popular, available_balance_usd):
@@ -123,13 +179,27 @@ Result = 5.0
 
 ## Orchestrator tool
 
+A master tool for orchestrating others. Given a set of tools, it coordinates them to work together and accomplish a specific goal.
+
+### How to test
+
 ```bash
 uv run python test_orchestrator_tool.py
 ```
 
-```bash
-uv run python test_orchestrator_tool.py
+### How it works
 
+1. The tool searches for other available tools
+2. Available tools are loaded into Gemini
+3. A prompt with a goal is passed to the LLM
+4. An agent will dynamically use the tool to achieve its goal
+
+
+### What it looks like
+
+A goal prompt is provided so that the tool uses the other two tools described above to find new investment opportunities and evaluate them. It finally decides how much to invest in the tokens it finds interesting.
+
+```bash
 Calling discover_tokens_tool({'deployment_threshold': 168.0, 'liquidity_threshold': 100.0, 'block_range': 200.0})
 Found 7 new pools in the last 200 blocks
 Pool [WETH/CAT] has enough liquidity (10580.9777935038 >= 100)
