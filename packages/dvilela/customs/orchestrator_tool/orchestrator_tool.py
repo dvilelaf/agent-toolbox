@@ -87,7 +87,7 @@ def get_local_tools():
 
                 for attr_name in dir(module):
                     attr = getattr(module, attr_name)
-                    if callable(attr) and attr_name.endswith("_test"):
+                    if callable(attr) and attr_name.endswith("_tool"):
                         globals()[attr_name] = attr
                         tools.append(attr)
     return tools

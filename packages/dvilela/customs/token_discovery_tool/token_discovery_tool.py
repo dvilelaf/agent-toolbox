@@ -252,7 +252,7 @@ def error_response(msg: str) -> Tuple[str, None, None, None]:
     return msg, None, None, None
 
 
-def discover_tokens_test(
+def discover_tokens_tool(
     rpc: Optional[str] = None,
     twitter_credentials: Optional[str] = None,
     block_range: int = DEFAULT_BLOCK_RANGE,
@@ -274,6 +274,7 @@ def discover_tokens_test(
 
     if twitter_credentials is None or twitter_credentials == "...":
         twitter_credentials = os.getenv("TWITTER_CREDENTIALS", None)
+
 
     # Get tokens
     web3 = Web3(Web3.HTTPProvider(rpc))
