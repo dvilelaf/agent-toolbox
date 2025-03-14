@@ -4,6 +4,7 @@ import functools
 import importlib
 import inspect
 import os
+import sys
 import time
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
@@ -60,9 +61,11 @@ def finalize_tool():
 def get_local_tools():
     """Get all the local mech tools"""
 
+    tools = [finalize_tool]
+
     # Get tool paths, excluding this tool
     repo_root = Path(__file__).parent.parent.parent.parent.parent
-    tools = [finalize_tool]
+
     for root, dirs, files in os.walk(os.path.join(repo_root, "packages")):
         if "component.yaml" in files and "orchestrator_tool" not in root:
             # Load component.yaml
@@ -72,14 +75,21 @@ def get_local_tools():
                 config = yaml.safe_load(file)
                 script_path = os.path.join(root, config["entry_point"])
                 script_path_relative = os.path.relpath(script_path, repo_root)
-                module = os.path.splitext(script_path_relative)[0].replace(os.sep, ".")
+                module_name = os.path.splitext(script_path_relative)[0].replace(
+                    os.sep, "."
+                )
 
                 # Import module, add it to tools and to the global scope
-                module = importlib.import_module(module)
-                for func_name, func in inspect.getmembers(module, inspect.isfunction):
-                    if func_name.endswith("_tool"):
-                        globals()[func_name] = func
-                        tools.append(func)
+                spec = importlib.util.spec_from_file_location(module_name, script_path)
+                module = importlib.util.module_from_spec(spec)
+                sys.modules[module_name] = module
+                spec.loader.exec_module(module)
+
+                for attr_name in dir(module):
+                    attr = getattr(module, attr_name)
+                    if callable(attr) and attr_name.endswith("_test"):
+                        globals()[attr_name] = attr
+                        tools.append(attr)
     return tools
 
 

@@ -252,9 +252,9 @@ def error_response(msg: str) -> Tuple[str, None, None, None]:
     return msg, None, None, None
 
 
-def discover_tokens_tool(
-    rpc: str,
-    twitter_credentials: dict,
+def discover_tokens_test(
+    rpc: Optional[str] = None,
+    twitter_credentials: Optional[str] = None,
     block_range: int = DEFAULT_BLOCK_RANGE,
     liquidity_threshold: float = DEFAULT_LIQUIDITY_THRESHOLD,
     deployment_threshold: int = DEFAULT_DEPLOYMENT_THRESHOLD,
@@ -262,11 +262,18 @@ def discover_tokens_tool(
     """
     Searches for newly deployed ERC-20 tokens.
 
+    rpc: and rpc to connect to a blockchain
     twitter_credentials: a dictionary containing twitter credentials
     block_range: the number of blocks to parse for newly deployed pools
     liquidity_threshold: the min liquidity (in dollars) of a pool to be considered liquid enough
     deployment_threshold: the max age (in hours) of a token since its deployment for it to be considered
     """
+
+    if rpc is None or rpc == "...":
+        rpc = os.getenv("RPC_BASE", None)
+
+    if twitter_credentials is None or twitter_credentials == "...":
+        twitter_credentials = os.getenv("TWITTER_CREDENTIALS", None)
 
     # Get tokens
     web3 = Web3(Web3.HTTPProvider(rpc))
