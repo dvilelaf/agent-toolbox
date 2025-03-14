@@ -1,8 +1,8 @@
 {
     "dev": {
-        "custom/dvilela/token_discovery_tool/0.1.0": "bafybeicwwmsupd4rqookfzzyxd6le4ufg2jty6y3jaqmnwsuozeq7dyk4m",
-        "custom/dvilela/orchestrator_tool/0.1.0": "bafybeibegvq3k6x5vb3dhxzyyiestgole74nhh7ywloqyko2vk7emo3imu",
-        "custom/dvilela/dynamic_tool/0.1.0": "bafybeic4pwv5tcwzexsw5q364xy7vgvgncrq25645grlmyumranjktrst4"
+        "custom/dvilela/token_discovery_tool/0.1.0": "bafybeiddg2zxe6hypbbo7p2hbqjlfa72xmenxb4zriecs2hwidy2m5pvje",
+        "custom/dvilela/orchestrator_tool/0.1.0": "bafybeidbdlhwtj6qtv7mji76pzfzvukm2iaqpoixb7ouuvzeufwg2g4nmu",
+        "custom/dvilela/dynamic_tool/0.1.0": "bafybeigh7zqr2mlj2a5rydklefstoocbikaeomakspdrkmi3wky22fspyq"
     },
     "third_party": {}
 }

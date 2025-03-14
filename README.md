@@ -1,6 +1,7 @@
-# Eolas x Algo: Agent Skills Hackathon
+# Agent Toolbox
 
 A collection of tools for your agent's toolbox.
+Submitted to the Eolas x Algo: Agent Skills Hackathon
 
 <p align="center">
   <img width="30%" src="img/logo.png">

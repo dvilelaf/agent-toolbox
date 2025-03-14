@@ -7,7 +7,7 @@ license: Apache-2.0
 aea_version: '>=1.0.0, <2.0.0'
 fingerprint:
   __init__.py: bafybeicsi3kd254a467x2se7tyed5io73r65gjc7l253q5wldhi7hhndbu
-  dynamic_tool.py: bafybeigkoxku6jluq2e6xbcoxgvy2uqpfe36ykhm267lnvof4szdhrw54e
+  dynamic_tool.py: bafybeiahlh4ikfec463obzaguhfrjhvjholtujazezkpccgy4uyhoahebe
 fingerprint_ignore_patterns: []
 entry_point: dynamic_tool.py
 callable: run

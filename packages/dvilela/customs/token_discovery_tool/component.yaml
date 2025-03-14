@@ -8,7 +8,7 @@ aea_version: '>=1.0.0, <2.0.0'
 fingerprint:
   __init__.py: bafybeicsi3kd254a467x2se7tyed5io73r65gjc7l253q5wldhi7hhndbu
   constants.py: bafybeigfqrgzq7ljqkgnbcflfy2yfqweyfjjynegikuo6fv3itghjsrn6u
-  token_discovery_tool.py: bafybeiduy4fekrg5gxhow7culvfko5gp6pnr2ezj745iqqoso2roejnedq
+  token_discovery_tool.py: bafybeiajdxivkkdsvhppvfj5huv534iuu57k7ikpu6cjc7za2ayprf5cpq
 fingerprint_ignore_patterns: []
 entry_point: token_discovery_tool.py
 callable: run
