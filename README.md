@@ -1,7 +1,7 @@
 # Agent Toolbox
 
 A collection of tools for your agent's toolbox.
-Submitted to the Eolas x Algo: Agent Skills Hackathon
+Submitted to the Eolas x Algo: Agent Skills Hackathon.
 
 <p align="center">
   <img width="30%" src="img/logo.png">
@@ -21,6 +21,7 @@ This repository implements three different agent tools. All of them are compatib
 # Requirements
 * Python >= 3.10
 * [UV](https://github.com/astral-sh/uv)
+* Rename `sample.env` to `.env`and fill in the required variables. Twitter cookies should follow the format required by [Twikit](https://twikit.readthedocs.io/en/latest/)
 
 # Tools
 

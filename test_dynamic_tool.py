@@ -10,7 +10,7 @@ response, _, _, _ = run(
     api_keys={
         "gemini": os.getenv("GEMINI_API_KEY"),
     },
-    prompt="A function that decides to invest in a ERC-20 token or not and returns the amount to be invested",
+    prompt="A function that decides whether to invest in a ERC-20 token or not and returns the amount to be invested",
     address="0xdummy_address",
     symbol="TEST",
     decimals=18,
