@@ -18,6 +18,10 @@ This repository implements three different agent tools. All of them are compatib
 
 * **Orchestrator tool**: one tool to rule them all. This tool looks for other locally available tools, loads them into an agent and uses other tools as required to reach its goal.
 
+# Demo
+
+[![Demo](https://img.youtube.com/vi/HEkXmM__pXE/0.jpg)](https://www.youtube.com/watch?v=HEkXmM__pXE)
+
 # Requirements
 * Python >= 3.10
 * [UV](https://github.com/astral-sh/uv)
